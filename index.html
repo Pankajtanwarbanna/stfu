@@ -43,19 +43,40 @@
     <div class="text">STFU</div>
     <div class="hint">tap to shut them up</div>
     <script>
-        document.body.addEventListener('click', async () => {
-            const audioContext = new AudioContext();
-            const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const source = audioContext.createMediaStreamSource(mediaStream);
-            const delayNode = audioContext.createDelay(5);
-            const gainNode = audioContext.createGain();
-            delayNode.delayTime.value = 2;
-            gainNode.gain.value = 0.8;
-            source.connect(delayNode);
-            delayNode.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            document.querySelector('.hint').style.display = 'none';
-        }, { once: true });
+    document.body.addEventListener('click', async () => {
+        const audioContext = new AudioContext();
+
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const source = audioContext.createMediaStreamSource(mediaStream);
+
+        // Gain nodes
+        const masterGain = audioContext.createGain();
+        const echoGain = audioContext.createGain();
+
+        // Delay node
+        const delay = audioContext.createDelay(5);
+
+        // SETTINGS
+        delay.delayTime.value = 1.0;     // 1 second interval
+        echoGain.gain.value = 0.4;       // controls echo decay
+        masterGain.gain.value = 2.0;     // 200% volume
+
+        // Dry signal (original voice)
+        source.connect(masterGain);
+
+        // Echo loop
+        source.connect(delay);
+        delay.connect(echoGain);
+        echoGain.connect(delay);
+
+        // Send echo to output
+        delay.connect(masterGain);
+
+        // Output
+        masterGain.connect(audioContext.destination);
+
+        document.querySelector('.hint').style.display = 'none';
+    }, { once: true });
     </script>
 </body>
 
