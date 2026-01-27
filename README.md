@@ -1,6 +1,6 @@
 # STFU 🤫
 
-i was at bombay airport. some dude was watching reels on full volume and laughing loudly. asking nicely doesn't work anymore. me being me, didn't have the courage to speak up.
+i was at mumbai airport. some dude was watching reels on full volume and laughing loudly. asking nicely doesn't work anymore. me being me, didn't have the courage to speak up.
 
 so i built a tiny app that plays back the same audio it hears, delayed by ~2 seconds. asked claude, it spat out a working version in one prompt. surprisingly WORKS.
 
