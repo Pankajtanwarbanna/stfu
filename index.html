@@ -35,6 +35,79 @@
             font-size: 16px;
             color: #666;
         }
+
+        .status {
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            background: #222;
+        }
+
+        .wave-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            height: 40px;
+        }
+
+        .wave-bar {
+            width: 4px;
+            background: #f87171;
+            border-radius: 2px;
+            transition: background 0.3s;
+        }
+
+        .status.listening .wave-bar {
+            background: #4ade80;
+            animation: wave 0.8s ease-in-out infinite;
+        }
+
+        .wave-bar:nth-child(1) { height: 8px; animation-delay: 0s; }
+        .wave-bar:nth-child(2) { height: 12px; animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { height: 20px; animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { height: 16px; animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { height: 24px; animation-delay: 0.4s; }
+        .wave-bar:nth-child(6) { height: 16px; animation-delay: 0.5s; }
+        .wave-bar:nth-child(7) { height: 20px; animation-delay: 0.6s; }
+        .wave-bar:nth-child(8) { height: 12px; animation-delay: 0.7s; }
+        .wave-bar:nth-child(9) { height: 8px; animation-delay: 0.8s; }
+
+        @keyframes wave {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.8); }
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            cursor: default;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider-label {
+            font-size: 16px;
+            color: #999;
+        }
+
+        input[type="range"] {
+            width: 200px;
+            cursor: pointer;
+        }
+
+        .delay-value {
+            font-size: 18px;
+            color: #fff;
+            min-width: 60px;
+        }
     </style>
 </head>
 
@@ -42,20 +115,80 @@
     <div class="emoji">🤫</div>
     <div class="text">STFU</div>
     <div class="hint">tap to shut them up</div>
+    <div class="status paused">
+        <div class="wave-container">
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+        </div>
+    </div>
+    <div class="controls" onclick="event.stopPropagation()">
+        <div class="slider-container">
+            <span class="slider-label">Delay:</span>
+            <input type="range" id="delaySlider" min="0.5" max="5" step="0.5" value="2">
+            <span class="delay-value"><span id="delayDisplay">2.0</span>s</span>
+        </div>
+    </div>
     <script>
+        let audioContext = null;
+        let mediaStream = null;
+        let delayNode = null;
+        let isListening = false;
+
+        const statusEl = document.querySelector('.status');
+        const delaySlider = document.getElementById('delaySlider');
+        const delayDisplay = document.getElementById('delayDisplay');
+
+        // Update delay display when slider changes
+        delaySlider.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            delayDisplay.textContent = value.toFixed(1);
+            if (delayNode) {
+                delayNode.delayTime.value = value;
+            }
+        });
+
+        // Toggle listening on body click
         document.body.addEventListener('click', async () => {
-            const audioContext = new AudioContext();
-            const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const source = audioContext.createMediaStreamSource(mediaStream);
-            const delayNode = audioContext.createDelay(5);
-            const gainNode = audioContext.createGain();
-            delayNode.delayTime.value = 2;
-            gainNode.gain.value = 0.8;
-            source.connect(delayNode);
-            delayNode.connect(gainNode);
-            gainNode.connect(audioContext.destination);
             document.querySelector('.hint').style.display = 'none';
-        }, { once: true });
+
+            if (!isListening) {
+                // Start listening
+                audioContext = new AudioContext();
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const source = audioContext.createMediaStreamSource(mediaStream);
+                delayNode = audioContext.createDelay(5);
+                const gainNode = audioContext.createGain();
+                delayNode.delayTime.value = parseFloat(delaySlider.value);
+                gainNode.gain.value = 0.8;
+                source.connect(delayNode);
+                delayNode.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                isListening = true;
+                statusEl.className = 'status listening';
+            } else {
+                // Stop listening
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                }
+                if (audioContext) {
+                    audioContext.close();
+                }
+                audioContext = null;
+                mediaStream = null;
+                delayNode = null;
+
+                isListening = false;
+                statusEl.className = 'status paused';
+            }
+        });
     </script>
 </body>
 
